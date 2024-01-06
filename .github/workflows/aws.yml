@@ -1,0 +1,43 @@
+name: Deploy to App Runner
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+          
+      - name: Deploy to App Runner
+        id: deploy-apprunner
+        uses: awslabs/amazon-app-runner-deploy@main
+        with:
+          service: app-runner-git-deploy-service
+          source-connection-arn: ${{ secrets.AWS_CONNECTION_SOURCE_ARN }}
+          repo: https://github.com/ABAmbros/Repo_App_Runner.git
+          branch: main
+          runtime: PYTHON_3
+          build-command: pip install -r app/requirements.txt
+          start-command: python app/app.py
+          port: 8080
+          region: ${{ secrets.AWS_REGION }}
+          cpu : 1
+          memory : 2
+          wait-for-service-stability-seconds: 600
+          tags: >
+            { "env": "test" }
+      
+      - name: App Runner URL
+        run: echo "App runner URL ${{ steps.deploy-apprunner.outputs.service-url }}"

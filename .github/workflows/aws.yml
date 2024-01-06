@@ -1,39 +1,43 @@
-name: Deploy to App Runner 
+name: Deploy to App Runner
+
 on:
   push:
-    branches: [ main ] 
-  workflow_dispatch:
-# upload the app docker image to AWS ECR
-  push_to_AWS_ECR:
-    name: Deploy docker image to AWS ECR
+    branches:
+      - main
+
+jobs:
+  deploy:
     runs-on: ubuntu-latest
 
-    # run this job only if the app build and test successfully
-    needs: [build_test]
-
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
+      - name: Checkout Repository
+        uses: actions/checkout@v2
 
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: eu-west-3
-
-    - name: Login to Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v1
-
-    - name: Build, tag, and push the image to Amazon ECR
-      id: build-image
-      env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        ECR_REPOSITORY: ${{ secrets.AWS_ECR_REPO_NAME }}
-        IMAGE_TAG: latest
-      run: |
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-        echo "Pushing image to ECR..."
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-        echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-3
+          
+      - name: Deploy to App Runner
+        id: deploy-apprunner
+        uses: awslabs/amazon-app-runner-deploy@main
+        with:
+          service: app-runner-git-deploy-service
+          source-connection-arn: ${{ secrets.AWS_CONNECTION_SOURCE_ARN }}
+          repo: https://github.com/ABAmbros/Repo_App_Runner.git
+          branch: main
+          runtime: PYTHON_3
+          build-command: pip install -r app/requirements.txt
+          start-command: python app/app.py
+          port: 8080
+          region: eu-west-3
+          cpu : 1
+          memory : 2
+          wait-for-service-stability-seconds: 600
+          tags: >
+            { "env": "test" }
+      
+      - name: App Runner URL
+        run: echo "App runner URL ${{ steps.deploy-apprunner.outputs.service-url }}"

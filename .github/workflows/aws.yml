@@ -1,4 +1,11 @@
-  # upload the app docker image to AWS ECR
+name: Deploy to App Runner 
+on:
+  push:
+    branches: [ main ] 
+  workflow_dispatch:
+  
+jobs:
+# upload the app docker image to AWS ECR
   push_to_AWS_ECR:
     name: Deploy docker image to AWS ECR
     runs-on: ubuntu-latest

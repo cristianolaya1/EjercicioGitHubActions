@@ -26,7 +26,7 @@ jobs:
         with:
           service: app-runner-git-deploy-service
           source-connection-arn: ${{ secrets.AWS_CONNECTION_SOURCE_ARN }}
-          repo: https://github.com/ABAmbros/Repo_App_Runner.git
+          repo: https://github.com/cristianolaya1/EjercicioGitHubActions.git
           branch: main
           runtime: PYTHON_3
           build-command: pip install -r app/requirements.txt
